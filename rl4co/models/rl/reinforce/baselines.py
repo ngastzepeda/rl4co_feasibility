@@ -273,12 +273,13 @@ class RolloutBaseline(REINFORCEBaseline):
 
 
 REINFORCE_BASELINES_REGISTRY = {
-    "no": NoBaseline,
-    "shared": SharedBaseline,
-    "exponential": ExponentialBaseline,
     "critic": CriticBaseline,
+    "exponential": ExponentialBaseline,
     "mean": MeanBaseline,
+    "no": NoBaseline,
     "rollout_only": RolloutBaseline,
+    "shared": SharedBaseline,
+    "symnco": NoBaseline,
     "warmup": WarmupBaseline,
 }
 
