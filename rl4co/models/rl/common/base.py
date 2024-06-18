@@ -113,9 +113,9 @@ class RL4COLitModule(LightningModule, metaclass=abc.ABCMeta):
 
         if not metrics:
             log.info("No metrics specified, using default")
-        self.train_metrics = metrics.get("train", ["loss", "reward"])
-        self.val_metrics = metrics.get("val", ["reward"])
-        self.test_metrics = metrics.get("test", ["reward"])
+        self.train_metrics = metrics.get("train", ["loss", "reward", "feasibility"])
+        self.val_metrics = metrics.get("val", ["reward", "feasibility"])
+        self.test_metrics = metrics.get("test", ["reward", "feasibility"])
         self.log_on_step = metrics.get("log_on_step", True)
 
     def setup(self, stage="fit"):
@@ -214,7 +214,10 @@ class RL4COLitModule(LightningModule, metaclass=abc.ABCMeta):
             }
 
     def log_metrics(
-        self, metric_dict: dict, phase: str, dataloader_idx: Union[int, None] = None
+        self,
+        metric_dict: dict,
+        phase: str,
+        dataloader_idx: Union[int, None] = None,
     ):
         """Log metrics to logger and progress bar"""
         metrics = getattr(self, f"{phase}_metrics")
@@ -222,9 +225,9 @@ class RL4COLitModule(LightningModule, metaclass=abc.ABCMeta):
         if dataloader_idx is not None and self.dataloader_names is not None:
             dataloader_name = "/" + self.dataloader_names[dataloader_idx]
         metrics = {
-            f"{phase}/{k}{dataloader_name}": v.mean()
-            if isinstance(v, torch.Tensor)
-            else v
+            f"{phase}/{k}{dataloader_name}": (
+                v.mean() if isinstance(v, torch.Tensor) else v
+            )
             for k, v in metric_dict.items()
             if k in metrics
         }
