@@ -54,6 +54,8 @@ class PolyNetPolicy(AutoregressivePolicy):
         train_decode_type: str = "sampling",
         val_decode_type: str = "sampling",
         test_decode_type: str = "sampling",
+        kwargs_encoder: dict = {},
+        kwargs_decoder: dict = {},
         **kwargs,
     ):
         if encoder is None:
@@ -65,11 +67,11 @@ class PolyNetPolicy(AutoregressivePolicy):
                     env_name=env_name,
                     normalization=normalization,
                     feedforward_hidden=feedforward_hidden,
-                    **kwargs,
+                    **kwargs_encoder,
                 )
             elif encoder_type == "MatNet":
                 kwargs_with_defaults = {"init_embedding_kwargs": {"mode": "RandomOneHot"}}
-                kwargs_with_defaults.update(kwargs)
+                kwargs_with_defaults.update(kwargs_encoder)
                 encoder = MatNetEncoder(
                     embed_dim=embed_dim,
                     num_heads=num_heads,
@@ -84,7 +86,7 @@ class PolyNetPolicy(AutoregressivePolicy):
             embed_dim=embed_dim,
             num_heads=num_heads,
             env_name=env_name,
-            **kwargs,
+            **kwargs_decoder,
         )
 
         super(PolyNetPolicy, self).__init__(
