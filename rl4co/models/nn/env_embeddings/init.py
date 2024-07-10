@@ -140,14 +140,13 @@ class VRPTWInitEmbedding(VRPInitEmbedding):
 
     def forward(self, td):
         depot, cities = td["locs"][:, :1, :], td["locs"][:, 1:, :]
-        durations = td["durations"][..., 1:]
+        durations = td["durations"][..., 1:][..., None]
         time_windows = td["time_windows"][..., 1:, :]
+        demands = td["demand"][..., 1:][..., None]
         # embeddings
         depot_embedding = self.init_embed_depot(depot)
         node_embeddings = self.init_embed(
-            torch.cat(
-                (cities, td["demand"][..., None], time_windows, durations[..., None]), -1
-            )
+            torch.cat((cities, demands, time_windows, durations), -1)
         )
         return torch.cat((depot_embedding, node_embeddings), -2)
 
