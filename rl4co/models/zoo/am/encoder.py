@@ -38,7 +38,7 @@ class AttentionModelEncoder(AutoregressiveEncoder):
         normalization: str = "batch",
         feedforward_hidden: int = 512,
         net: nn.Module = None,
-        sdpa_fn = None,
+        sdpa_fn=None,
         moe_kwargs: dict = None,
     ):
         super(AttentionModelEncoder, self).__init__()

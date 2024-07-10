@@ -39,22 +39,17 @@ class CVRPTWGenerator(CVRPGenerator):
             durations [batch_size, num_loc]: service durations of each location
             time_windows [batch_size, num_loc, 2]: time windows of each location
     """
+
     def __init__(
         self,
         num_loc: int = 20,
         min_loc: float = 0.0,
         max_loc: float = 150.0,
-        loc_distribution: Union[
-            int, float, str, type, Callable
-        ] = Uniform,
-        depot_distribution: Union[
-            int, float, str, type, Callable
-        ] = None,
+        loc_distribution: Union[int, float, str, type, Callable] = Uniform,
+        depot_distribution: Union[int, float, str, type, Callable] = None,
         min_demand: int = 1,
         max_demand: int = 10,
-        demand_distribution: Union[
-            int, float, type, Callable
-        ] = Uniform,
+        demand_distribution: Union[int, float, type, Callable] = Uniform,
         vehicle_capacity: float = 1.0,
         capacity: float = None,
         max_time: float = 480,
@@ -86,9 +81,7 @@ class CVRPTWGenerator(CVRPGenerator):
 
         ## define service durations
         # generate randomly (first assume service durations of 0, to be changed later)
-        durations = torch.zeros(
-            *batch_size, self.num_loc + 1, dtype=torch.float32
-        )
+        durations = torch.zeros(*batch_size, self.num_loc + 1, dtype=torch.float32)
 
         ## define time windows
         # 1. get distances from depot

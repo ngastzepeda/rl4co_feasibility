@@ -159,6 +159,7 @@ class ConstructivePolicy(nn.Module):
         td: TensorDict,
         env: Optional[Union[str, RL4COEnvBase]] = None,
         phase: str = "train",
+        calc_feasibility: bool = True,
         calc_reward: bool = True,
         return_actions: bool = False,
         return_entropy: bool = False,
@@ -188,7 +189,7 @@ class ConstructivePolicy(nn.Module):
             decoding_kwargs: Keyword arguments for the decoding strategy. See :class:`rl4co.utils.decoding.DecodingStrategy` for more information.
 
         Returns:
-            out: Dictionary containing the reward, log likelihood, and optionally the actions and entropy
+            out: Dictionary containing the reward, feasibility, log likelihood, and optionally the actions and entropy
         """
 
         # Encoder: get encoder output and initial embeddings from initial state
@@ -248,9 +249,20 @@ class ConstructivePolicy(nn.Module):
         # Output dictionary construction
         if calc_reward:
             td.set("reward", env.get_reward(td, actions))
+        if calc_feasibility:
+            try:
+                td.set(
+                    "feasibility", env.check_feasibility(td, actions, throw_error=False)
+                )
+            except (AttributeError, NotImplementedError):
+                log.warning(
+                    f"Feasibility check not implemented for {env.name} environment"
+                )
+                td.set("feasibility", None)
 
         outdict = {
             "reward": td["reward"],
+            "feasibility": td["feasibility"],
             "log_likelihood": get_log_likelihood(
                 logprobs, actions, td.get("mask", None), return_sum_log_likelihood
             ),
