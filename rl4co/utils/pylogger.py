@@ -2,6 +2,7 @@ import logging
 import sys
 
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
+from loguru import logger as loguru_logger
 
 
 def get_pylogger(name=__name__) -> logging.Logger:
@@ -46,3 +47,33 @@ def get_pylogger(name=__name__) -> logging.Logger:
         setattr(logger, level, rank_zero_only(getattr(logger, level)))
 
     return logger
+
+
+# Initialize the standard logger
+std_logger = get_pylogger()
+
+
+# Add standard logger to loguru
+class InterceptHandler(logging.Handler):
+    def emit(self, record):
+        # Get the corresponding Loguru level if it exists
+        level = (
+            loguru_logger.level(record.levelname).name
+            if record.levelname in loguru_logger._core.levels
+            else record.levelno
+        )
+        # Find the caller from where originated the logged message
+        frame, depth = logging.currentframe(), 2
+        while frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+        loguru_logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
+
+
+logging.basicConfig(handlers=[InterceptHandler()], level=0)
+
+# Now use loguru for logging
+loguru_logger.add(sys.stdout, level="DEBUG")
+loguru_logger.add(sys.stderr, level="ERROR")
