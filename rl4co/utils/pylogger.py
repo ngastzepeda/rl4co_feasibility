@@ -23,9 +23,11 @@ def get_pylogger(name=__name__) -> logging.Logger:
     stderr_handler.setLevel(logging.WARNING)  # Handle WARNING and above levels
 
     # Create formatters and add them to the handlers
-    # formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    # stdout_handler.setFormatter(formatter)
-    # stderr_handler.setFormatter(formatter)
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s\t | %(name)s - %(message)s"
+    )
+    stdout_handler.setFormatter(formatter)
+    stderr_handler.setFormatter(formatter)
 
     # Add handlers to the logger
     logger.addHandler(stdout_handler)
