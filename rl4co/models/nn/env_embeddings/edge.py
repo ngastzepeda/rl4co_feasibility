@@ -27,6 +27,7 @@ def env_edge_embedding(env_name: str, config: dict) -> nn.Module:
         "tsp": TSPEdgeEmbedding,
         "atsp": ATSPEdgeEmbedding,
         "cvrp": TSPEdgeEmbedding,
+        "skillvrp": TSPEdgeEmbedding,
         "sdvrp": TSPEdgeEmbedding,
         "pctsp": TSPEdgeEmbedding,
         "spctsp": TSPEdgeEmbedding,

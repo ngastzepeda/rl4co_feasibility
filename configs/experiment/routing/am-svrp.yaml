@@ -2,7 +2,7 @@
 
 defaults:
   - override /model: am.yaml
-  - override /env: svrp.yaml
+  - override /env: skillvrp.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
   - override /logger: wandb.yaml

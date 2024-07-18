@@ -21,7 +21,7 @@ def env_init_embedding(env_name: str, config: dict) -> nn.Module:
         "matnet": MatNetInitEmbedding,
         "cvrp": VRPInitEmbedding,
         "cvrptw": VRPTWInitEmbedding,
-        "svrp": SVRPInitEmbedding,
+        "skillvrp": SkillVRPInitEmbedding,
         "sdvrp": VRPInitEmbedding,
         "pctsp": PCTSPInitEmbedding,
         "spctsp": PCTSPInitEmbedding,
@@ -151,9 +151,9 @@ class VRPTWInitEmbedding(VRPInitEmbedding):
         return torch.cat((depot_embedding, node_embeddings), -2)
 
 
-class SVRPInitEmbedding(nn.Module):
+class SkillVRPInitEmbedding(nn.Module):
     def __init__(self, embed_dim, linear_bias=True, node_dim: int = 3):
-        super(SVRPInitEmbedding, self).__init__()
+        super(SkillVRPInitEmbedding, self).__init__()
         node_dim = node_dim  # 3: x, y, skill
         self.init_embed = nn.Linear(node_dim, embed_dim, linear_bias)
         self.init_embed_depot = nn.Linear(2, embed_dim, linear_bias)  # depot embedding

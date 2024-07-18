@@ -24,7 +24,7 @@ from rl4co.envs import (
     SDVRPEnv,
     SMTWTPEnv,
     SPCTSPEnv,
-    SVRPEnv,
+    SkillVRPEnv,
     TSPEnv,
 )
 from rl4co.utils.decoding import random_policy, rollout
@@ -40,7 +40,7 @@ warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
         TSPEnv,
         CVRPEnv,
         CVRPTWEnv,
-        SVRPEnv,
+        SkillVRPEnv,
         SDVRPEnv,
         PCTSPEnv,
         SPCTSPEnv,

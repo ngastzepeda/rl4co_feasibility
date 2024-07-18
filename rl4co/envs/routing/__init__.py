@@ -18,7 +18,7 @@ from rl4co.envs.routing.pdp.env import PDPEnv, PDPRuinRepairEnv
 from rl4co.envs.routing.pdp.generator import PDPGenerator
 from rl4co.envs.routing.sdvrp.env import SDVRPEnv
 from rl4co.envs.routing.spctsp.env import SPCTSPEnv
-from rl4co.envs.routing.svrp.env import SVRPEnv
-from rl4co.envs.routing.svrp.generator import SVRPGenerator
+from rl4co.envs.routing.skillvrp.env import SkillVRPEnv
+from rl4co.envs.routing.skillvrp.generator import SkillVRPGenerator
 from rl4co.envs.routing.tsp.env import DenseRewardTSPEnv, TSPEnv, TSPkoptEnv
 from rl4co.envs.routing.tsp.generator import TSPGenerator

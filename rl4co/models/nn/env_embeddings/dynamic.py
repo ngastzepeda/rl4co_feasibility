@@ -22,7 +22,7 @@ def env_dynamic_embedding(env_name: str, config: dict) -> nn.Module:
         "cvrp": StaticEmbedding,
         "cvrptw": StaticEmbedding,
         "ffsp": StaticEmbedding,
-        "svrp": StaticEmbedding,
+        "skillvrp": StaticEmbedding,
         "sdvrp": SDVRPDynamicEmbedding,
         "pctsp": StaticEmbedding,
         "spctsp": StaticEmbedding,

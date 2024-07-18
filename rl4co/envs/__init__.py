@@ -19,7 +19,7 @@ from rl4co.envs.routing import (
     PDPRuinRepairEnv,
     SDVRPEnv,
     SPCTSPEnv,
-    SVRPEnv,
+    SkillVRPEnv,
     TSPEnv,
     TSPkoptEnv,
 )
@@ -44,7 +44,7 @@ ENV_REGISTRY = {
     "pdp": PDPEnv,
     "pdp_ruin_repair": PDPRuinRepairEnv,
     "sdvrp": SDVRPEnv,
-    "svrp": SVRPEnv,
+    "skillvrp": SkillVRPEnv,
     "spctsp": SPCTSPEnv,
     "tsp": TSPEnv,
     "smtwtp": SMTWTPEnv,

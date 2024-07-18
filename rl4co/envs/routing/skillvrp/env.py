@@ -15,14 +15,14 @@ from rl4co.envs.common.base import RL4COEnvBase
 from rl4co.utils.ops import gather_by_index, get_distance
 from rl4co.utils.pylogger import get_pylogger
 
-from .generator import SVRPGenerator
+from .generator import SkillVRPGenerator
 from .render import render
 
 log = get_pylogger(__name__)
 
 
-class SVRPEnv(RL4COEnvBase):
-    """Skill-Vehicle Routing Problem (SVRP) environment.
+class SkillVRPEnv(RL4COEnvBase):
+    """Skill-Vehicle Routing Problem (SkillVRP) environment.
     Basic Skill-VRP environment. The environment is a variant of the Capacitated Vehicle Routing Problem (CVRP).
     Each technician has a certain skill-level and each customer node requires a certain skill-level to be serviced.
     Each customer node needs is to be serviced by exactly one technician. Technicians can only service nodes if
@@ -36,7 +36,7 @@ class SVRPEnv(RL4COEnvBase):
         - the remaining locations to deliver
         - the visited locations
         - the current step
-    
+
     Constraints:
         - the tour starts and ends at the depot
         - each pickup location must be visited before its corresponding delivery location
@@ -53,17 +53,17 @@ class SVRPEnv(RL4COEnvBase):
         generator_params: parameters for the generator
     """
 
-    name = "svrp"
+    name = "skillvrp"
 
     def __init__(
         self,
-        generator: SVRPGenerator = None,
+        generator: SkillVRPGenerator = None,
         generator_params: dict = {},
         **kwargs,
     ):
         super().__init__(**kwargs)
         if generator is None:
-            generator = SVRPGenerator(**generator_params)
+            generator = SkillVRPGenerator(**generator_params)
         self.generator = generator
         self.tech_costs = self.generator.tech_costs
         self._make_spec(self.generator)
