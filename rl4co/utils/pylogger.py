@@ -7,6 +7,7 @@ def get_pylogger(name=__name__) -> logging.Logger:
     """Initializes multi-GPU-friendly python command line logger."""
 
     logger = logging.getLogger(name)
+    logger.setLevel("INFO")
 
     # this ensures all logging levels get marked with the rank zero decorator
     # otherwise logs would get multiplied for each GPU process in multi-GPU setup
