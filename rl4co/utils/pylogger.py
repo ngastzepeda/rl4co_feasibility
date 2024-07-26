@@ -3,10 +3,19 @@ import sys
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from loguru import logger as loguru_logger
 
-# use loguru for logging
-loguru_logger.remove()  # Remove any default handler if it exists
-loguru_logger.add(sys.stdout, level="INFO")  # Log INFO and above to stdout
-loguru_logger.add(sys.stderr, level="ERROR")  # Log ERROR and above to stderr
+
+def configure_wandb_logger():
+    # use loguru for logging
+    loguru_logger.remove()  # Remove any default handler if it exists
+    loguru_logger.add(
+        sys.stdout, level="INFO", filter=lambda record: record["level"].no < 40
+    )
+    loguru_logger.add(sys.stderr, level="ERROR")  # Log ERROR and above to stderr
+
+
+loguru_logger.remove(handler_id=1)  # Remove the default stderr handler
+if not loguru_logger._core.handlers:
+    configure_wandb_logger()
 
 
 # Intercept logs from the standard logging module to loguru
@@ -37,30 +46,8 @@ def get_pylogger(name=__name__) -> logging.Logger:
     """Initializes multi-GPU-friendly python command line logger."""
 
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
     logger.addHandler(InterceptHandler())
-    # logger.setLevel(logging.DEBUG)
-
-    # # Remove any existing handlers
-    # for handler in logger.handlers[:]:
-    #     logger.removeHandler(handler)
-
-    # # Create handlers
-    # stdout_handler = logging.StreamHandler(sys.stdout)
-    # stderr_handler = logging.StreamHandler(sys.stderr)
-
-    # # Set levels for handlers
-    # stdout_handler.setLevel(logging.DEBUG)  # Handle DEBUG and above levels to INFO
-    # stderr_handler.setLevel(logging.WARNING)  # Handle WARNING and above levels
-
-    # # Create formatters and add them to the handlers
-    # formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s - %(message)s")
-    # stdout_handler.setFormatter(formatter)
-    # stderr_handler.setFormatter(formatter)
-
-    # # Add handlers to the logger
-    # logger.addHandler(stdout_handler)
-    # logger.addHandler(stderr_handler)
+    logger.propagate = False
 
     # This ensures all logging levels get marked with the rank zero decorator
     # otherwise logs would get multiplied for each GPU process in multi-GPU setup
