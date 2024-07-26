@@ -13,7 +13,7 @@ def configure_wandb_logger():
     loguru_logger.add(sys.stderr, level="ERROR")  # Log ERROR and above to stderr
 
 
-loguru_logger.remove(handler_id=1)  # Remove the default stderr handler
+loguru_logger.remove(handler_id=0)  # Remove the default stderr handler
 if not loguru_logger._core.handlers:
     configure_wandb_logger()
 
