@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional, Tuple, Union
 import torch.nn as nn
 
 from tensordict import TensorDict
-from torch import Tensor
+from torch import Tensor, zeros_like
 
 from rl4co.envs import RL4COEnvBase, get_env
 from rl4co.utils.decoding import (
@@ -159,10 +159,10 @@ class ConstructivePolicy(nn.Module):
         td: TensorDict,
         env: Optional[Union[str, RL4COEnvBase]] = None,
         phase: str = "train",
-        calc_feasibility: bool = True,
         calc_reward: bool = True,
         return_actions: bool = True,
         return_entropy: bool = False,
+        return_feasibility: bool = False,
         return_hidden: bool = False,
         return_init_embeds: bool = False,
         return_sum_log_likelihood: bool = True,
@@ -180,6 +180,7 @@ class ConstructivePolicy(nn.Module):
             calc_reward: Whether to calculate the reward
             return_actions: Whether to return the actions
             return_entropy: Whether to return the entropy
+            return_feasibility: Whether to return the feasibility ratio
             return_hidden: Whether to return the hidden state
             return_init_embeds: Whether to return the initial embeddings
             return_sum_log_likelihood: Whether to return the sum of the log likelihood
@@ -249,24 +250,24 @@ class ConstructivePolicy(nn.Module):
         # Output dictionary construction
         if calc_reward:
             td.set("reward", env.get_reward(td, actions))
-        if calc_feasibility:
-            try:
-                td.set(
-                    "feasibility", env.check_feasibility(td, actions, throw_error=False)
-                )
-            except (AttributeError, NotImplementedError):
-                log.warning(
-                    f"Feasibility check not implemented for {env.name} environment"
-                )
-                td.set("feasibility", None)
 
         outdict = {
             "reward": td["reward"],
-            "feasibility": td["feasibility"],
             "log_likelihood": get_log_likelihood(
                 logprobs, actions, td.get("mask", None), return_sum_log_likelihood
             ),
         }
+
+        if return_feasibility:
+            try:
+                feasibility = env.check_feasibility(td, actions, throw_error=False)
+            except (AttributeError, NotImplementedError):
+                log.warning(
+                    f"Feasibility check not implemented for {env.name} environment, setting to 0."
+                )
+                feasibility = zeros_like(outdict["log_likelihood"])
+            finally:
+                outdict["feasibility"] = feasibility
 
         if return_actions:
             outdict["actions"] = actions

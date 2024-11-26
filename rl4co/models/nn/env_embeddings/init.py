@@ -142,7 +142,7 @@ class VRPTWInitEmbedding(VRPInitEmbedding):
         depot, cities = td["locs"][:, :1, :], td["locs"][:, 1:, :]
         durations = td["durations"][..., 1:][..., None]
         time_windows = td["time_windows"][..., 1:, :]
-        demands = td["demand"][..., 1:][..., None]
+        demands = td["demand"][..., None]
         # embeddings
         depot_embedding = self.init_embed_depot(depot)
         node_embeddings = self.init_embed(

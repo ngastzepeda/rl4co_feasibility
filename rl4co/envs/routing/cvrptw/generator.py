@@ -84,6 +84,39 @@ class CVRPTWGenerator(CVRPGenerator):
         durations = torch.zeros(*batch_size, self.num_loc + 1, dtype=torch.float32)
 
         ## define time windows
+        min_times, max_times = self.generate_time_windows(
+            batch_size=batch_size, td=td, durations=durations
+        )
+
+        # Scale to [0, 1]
+        if self.scale:
+            durations = durations / self.max_time
+            min_times = min_times / self.max_time
+            max_times = max_times / self.max_time
+            td["depot"] = td["depot"] / self.max_time
+            td["locs"] = td["locs"] / self.max_time
+
+        # 8. stack to tensor time_windows
+        time_windows = torch.stack((min_times, max_times), dim=-1)
+
+        assert torch.all(
+            min_times < max_times
+        ), "Please make sure the relation between max_loc and max_time allows for feasible solutions."
+
+        # Reset duration at depot to 0
+        durations[:, 0] = 0.0
+        td.update(
+            {
+                "durations": durations,
+                "time_windows": time_windows,
+            }
+        )
+        return td
+
+    def generate_time_windows(self, batch_size, td, durations):
+
+        batch_size = [batch_size] if isinstance(batch_size, int) else batch_size
+
         # 1. get distances from depot
         dist = get_distance(td["depot"], td["locs"].transpose(0, 1)).transpose(0, 1)
         dist = torch.cat((torch.zeros(*batch_size, 1), dist), dim=1)
@@ -128,28 +161,4 @@ class CVRPTWGenerator(CVRPGenerator):
                     ),
                 )
                 max_times = max_tmp
-
-        # Scale to [0, 1]
-        if self.scale:
-            durations = durations / self.max_time
-            min_times = min_times / self.max_time
-            max_times = max_times / self.max_time
-            td["depot"] = td["depot"] / self.max_time
-            td["locs"] = td["locs"] / self.max_time
-
-        # 8. stack to tensor time_windows
-        time_windows = torch.stack((min_times, max_times), dim=-1)
-
-        assert torch.all(
-            min_times < max_times
-        ), "Please make sure the relation between max_loc and max_time allows for feasible solutions."
-
-        # Reset duration at depot to 0
-        durations[:, 0] = 0.0
-        td.update(
-            {
-                "durations": durations,
-                "time_windows": time_windows,
-            }
-        )
-        return td
+        return min_times, max_times
