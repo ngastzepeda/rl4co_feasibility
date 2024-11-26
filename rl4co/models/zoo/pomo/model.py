@@ -100,9 +100,7 @@ class POMO(REINFORCE):
             td = self.augment(td)
 
         # Evaluate policy
-        out = self.policy(
-            td, self.env, phase=phase, num_starts=n_start, return_actions=True
-        )
+        out = self.policy(td, self.env, phase=phase, num_starts=n_start)
 
         # Unbatchify reward to [batch_size, num_augment, num_starts].
         reward = unbatchify(out["reward"], (n_aug, n_start))

@@ -161,7 +161,7 @@ class ConstructivePolicy(nn.Module):
         phase: str = "train",
         calc_feasibility: bool = True,
         calc_reward: bool = True,
-        return_actions: bool = False,
+        return_actions: bool = True,
         return_entropy: bool = False,
         return_hidden: bool = False,
         return_init_embeds: bool = False,
