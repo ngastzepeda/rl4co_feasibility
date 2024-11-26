@@ -13,7 +13,7 @@ authors = [
     "Haoran Ye",
     "Minsu Kim",
     "Sanghyeok Choi",
-    "Zepeda Gast",
+    "Nayeli Gast Zepeda",
     "Andre Hottung",
     "Jianan Zhou",
     "Jieyi Bi",
@@ -76,6 +76,7 @@ scipy = "*"
 tensordict = ">=0.6.0"
 torchrl = ">=0.6.0"
 wandb = "*"
+loguru = "*"
 # Dev dependencies
 black = { version = "*", optional = true }
 pre-commit = { version = ">=3.3.3", optional = true }
