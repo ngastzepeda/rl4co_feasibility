@@ -162,7 +162,7 @@ class ConstructivePolicy(nn.Module):
         calc_reward: bool = True,
         return_actions: bool = True,
         return_entropy: bool = False,
-        return_feasibility: bool = False,
+        return_feasibility: bool = True,
         return_hidden: bool = False,
         return_init_embeds: bool = False,
         return_sum_log_likelihood: bool = True,
