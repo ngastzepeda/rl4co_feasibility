@@ -123,7 +123,7 @@ def calculate_entropy(logprobs: Tensor):
 
 
 # TODO: modularize inside the envs
-def get_num_starts(td, env_name=None):
+def get_num_starts(td, env_name=None, num_depots=1):
     """Returns the number of possible start nodes for the environment based on the action mask"""
     num_starts = td["action_mask"].shape[-1]
     if env_name == "pdp":
@@ -131,12 +131,12 @@ def get_num_starts(td, env_name=None):
             num_starts - 1
         ) // 2  # only half of the nodes (i.e. pickup nodes) can be start nodes
     elif env_name in ["cvrp", "cvrptw", "sdvrp", "mtsp", "op", "pctsp", "spctsp"]:
-        num_starts = num_starts - 1  # depot cannot be a start node
+        num_starts = num_starts - num_depots  # depot cannot be a start node
 
     return num_starts
 
 
-def select_start_nodes(td, env, num_starts):
+def select_start_nodes(td, env, num_starts, num_depots=1):
     """Node selection strategy as proposed in POMO (Kwon et al. 2020)
     and extended in SymNCO (Kim et al. 2022).
     Selects different start nodes for each batch element
@@ -159,7 +159,7 @@ def select_start_nodes(td, env, num_starts):
         selected = (
             torch.arange(num_starts, device=td.device).repeat_interleave(td.shape[0])
             % num_loc
-            + 1
+            + num_depots
         )
         if env.name == "op":
             if (td["action_mask"][..., 1:].float().sum(-1) < num_starts).any():
