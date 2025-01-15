@@ -186,6 +186,11 @@ class RL4COEnvBase(EnvBase, metaclass=abc.ABCMeta):
         if self.check_solution:
             self.check_solution_validity(td, actions)
         return self._get_reward(td, actions)
+    
+    def separate_cost_penalty(self, td: TensorDict, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Function to separate the cost and penalty from the reward. Is meant for more explicit logging.
+        """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def _get_reward(self, td, actions) -> TensorDict:
@@ -193,6 +198,7 @@ class RL4COEnvBase(EnvBase, metaclass=abc.ABCMeta):
         This is faster than calling step() and getting the reward from the returned TensorDict at each time for CO tasks
         """
         raise NotImplementedError
+    
 
     def get_action_mask(self, td: TensorDict) -> torch.Tensor:
         """Function to compute the action mask (feasible actions) for the current state
