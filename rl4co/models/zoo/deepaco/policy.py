@@ -45,7 +45,7 @@ class DeepACOPolicy(NonAutoregressivePolicy):
         **encoder_kwargs,
     ):
         if encoder is None:
-            encoder = NARGNNEncoder(**encoder_kwargs)
+            encoder = NARGNNEncoder(env_name=env_name, **encoder_kwargs)
 
         super(DeepACOPolicy, self).__init__(
             encoder=encoder,
