@@ -78,7 +78,7 @@ torchrl = ">=0.6.0"
 wandb = "*"
 loguru = "*"
 # Dev dependencies
-black = { version = "*", optional = true }
+black = { version = ">=24.3.0", optional = true }
 pre-commit = { version = ">=3.3.3", optional = true }
 ruff = { version = "*", optional = true }
 pytest = { version = "*", optional = true }
