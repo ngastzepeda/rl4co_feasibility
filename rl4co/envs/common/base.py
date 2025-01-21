@@ -187,7 +187,7 @@ class RL4COEnvBase(EnvBase, metaclass=abc.ABCMeta):
             self.check_solution_validity(td, actions)
         return self._get_reward(td, actions)
     
-    def check_feasibility(self, td: TensorDict, actions: torch.Tensor) -> torch.Tensor:
+    def check_feasibility(self, td: TensorDict, actions: torch.Tensor, throw_error=False) -> torch.Tensor:
         """Function to check the feasibility of the solution. Can be used for logging or for checking a solution.
         """
         raise NotImplementedError
