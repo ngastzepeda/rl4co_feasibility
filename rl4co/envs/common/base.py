@@ -187,6 +187,11 @@ class RL4COEnvBase(EnvBase, metaclass=abc.ABCMeta):
             self.check_solution_validity(td, actions)
         return self._get_reward(td, actions)
     
+    def check_feasibility(self, td: TensorDict, actions: torch.Tensor) -> torch.Tensor:
+        """Function to check the feasibility of the solution. Can be used for logging or for checking a solution.
+        """
+        raise NotImplementedError
+
     def separate_cost_penalty(self, td: TensorDict, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Function to separate the cost and penalty from the reward. Is meant for more explicit logging.
         """

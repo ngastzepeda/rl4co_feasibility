@@ -266,8 +266,18 @@ class ConstructivePolicy(nn.Module):
                     f"Feasibility check not implemented for {env.name} environment, setting to 0."
                 )
                 feasibility = zeros_like(outdict["log_likelihood"])
+            try: 
+                route_cost, route_penalty = env.separate_cost_penalty(td, actions)
+            except (AttributeError, NotImplementedError):
+                log.warning(
+                    f"Separate cost and penalty not implemented for {env.name} environment, setting to 0."
+                )
+                route_cost = zeros_like(outdict["log_likelihood"])
+                route_penalty = zeros_like(outdict["log_likelihood"])
             finally:
                 outdict["feasibility"] = feasibility
+                outdict["route_cost"] = route_cost
+                outdict["route_penalty"] = route_penalty
 
         if return_actions:
             outdict["actions"] = actions
