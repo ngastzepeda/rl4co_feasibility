@@ -1,4 +1,5 @@
 from functools import partial
+from torch import zeros_like
 from typing import Optional, Type, Union
 
 from tensordict import TensorDict
@@ -12,6 +13,9 @@ from rl4co.models.zoo.deepaco.antsystem import AntSystem
 from rl4co.models.zoo.nargnn.encoder import NARGNNEncoder
 from rl4co.utils.utils import merge_with_defaults
 from rl4co.utils.ops import batchify, unbatchify
+from rl4co.utils.pylogger import get_pylogger
+
+log = get_pylogger(__name__)
 
 
 class DeepACOPolicy(NonAutoregressivePolicy):
@@ -72,6 +76,7 @@ class DeepACOPolicy(NonAutoregressivePolicy):
         actions=None,
         return_actions: bool = True,
         return_hidden: bool = True,
+        return_feasibility: bool = True,
         **kwargs,
     ):
         """
@@ -90,7 +95,7 @@ class DeepACOPolicy(NonAutoregressivePolicy):
             )
             kwargs.update({"select_start_nodes_fn": select_start_nodes_fn})
             #  we just use the constructive policy
-            outdict = super().forward(
+            out = super().forward(
                 td_initial,
                 env,
                 phase=phase,
@@ -104,11 +109,11 @@ class DeepACOPolicy(NonAutoregressivePolicy):
             )
 
             # manually compute the advantage
-            reward = unbatchify(outdict["reward"], n_ants)
+            reward = unbatchify(out["reward"], n_ants)
             advantage = reward - reward.mean(dim=1, keepdim=True)
 
             if self.ls_reward_aug_W > 0 and self.train_with_local_search:
-                heatmap_logits = outdict["hidden"]
+                heatmap_logits = out["hidden"]
                 aco = self.aco_class(
                     heatmap_logits,
                     n_ants=n_ants,
@@ -116,17 +121,17 @@ class DeepACOPolicy(NonAutoregressivePolicy):
                     **self.aco_kwargs,
                 )
                 
-                actions = outdict["actions"]
+                actions = out["actions"]
                 _, ls_reward = aco.local_search(batchify(td_initial, n_ants), env, actions)
 
                 ls_reward = unbatchify(ls_reward, n_ants)
                 ls_advantage = ls_reward - ls_reward.mean(dim=1, keepdim=True)
                 advantage = advantage * (1 - self.ls_reward_aug_W) + ls_advantage * self.ls_reward_aug_W
 
-            outdict["advantage"] = advantage
-            outdict["log_likelihood"] = unbatchify(outdict["log_likelihood"], n_ants)
+            out["advantage"] = advantage
+            out["log_likelihood"] = unbatchify(out["log_likelihood"], n_ants)
 
-            return outdict
+            return out
 
         heatmap_logits, _ = self.encoder(td_initial)
 
@@ -143,5 +148,25 @@ class DeepACOPolicy(NonAutoregressivePolicy):
             out["reward"] = reward
         if return_actions:
             out["actions"] = actions
+        if return_feasibility:
+            try:
+                feasibility = env.check_feasibility(td, actions, throw_error=False)
+            except (AttributeError, NotImplementedError):
+                log.warning(
+                    f"Feasibility check not implemented for {env.name} environment, setting to 0."
+                )
+                feasibility = zeros_like(out["reward"])
+            try: 
+                route_cost, route_penalty = env.separate_cost_penalty(td, actions)
+            except (AttributeError, NotImplementedError):
+                log.warning(
+                    f"Separate cost and penalty not implemented for {env.name} environment, setting to 0."
+                )
+                route_cost = zeros_like(out["reward"])
+                route_penalty = zeros_like(out["reward"])
+            finally:
+                out["feasibility"] = feasibility
+                out["route_cost"] = route_cost
+                out["route_penalty"] = route_penalty
 
         return out
