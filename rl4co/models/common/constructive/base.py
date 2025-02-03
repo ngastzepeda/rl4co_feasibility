@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional, Tuple, Union
 import torch.nn as nn
 
 from tensordict import TensorDict
-from torch import Tensor, zeros_like
+from torch import Tensor, zeros_like, float32
 
 from rl4co.envs import RL4COEnvBase, get_env
 from rl4co.utils.decoding import (
@@ -266,7 +266,7 @@ class ConstructivePolicy(nn.Module):
                     f"Feasibility check not implemented for {env.name} environment, setting to 0."
                 )
                 feasibility = zeros_like(outdict["log_likelihood"])
-            try: 
+            try:
                 route_cost, route_penalty = env.separate_cost_penalty(td, actions)
             except (AttributeError, NotImplementedError):
                 log.warning(
@@ -278,6 +278,22 @@ class ConstructivePolicy(nn.Module):
                 outdict["feasibility"] = feasibility
                 outdict["route_cost"] = route_cost
                 outdict["route_penalty"] = route_penalty
+            # gap to original route costs (as defined during instance generation)
+            costs_orig = td.get("costs_orig", None)
+            if costs_orig is not None:
+                try:
+                    # scale route cost to original domain size
+                    route_cost = (route_cost * td["max_loc"].squeeze()).to(dtype=float32)
+                    # calculate gap to original costs
+                    gap_cost_to_orig = (route_cost - costs_orig) / costs_orig
+                except (AttributeError, NotImplementedError):
+                    log.warning(f"'max_loc' not in td, setting gap to 0.")
+                    gap_cost_to_orig = zeros_like(outdict["log_likelihood"])
+                finally:
+                    outdict["gap_cost_to_orig"] = gap_cost_to_orig
+                    outdict["gap_prew_to_orig"] = (
+                        outdict["reward"] - costs_orig
+                    ) / costs_orig
 
         if return_actions:
             outdict["actions"] = actions
