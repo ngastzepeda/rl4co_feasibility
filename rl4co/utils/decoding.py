@@ -246,8 +246,10 @@ class DecodingStrategy(metaclass=abc.ABCMeta):
             ), f"num_samples={num_samples} and num_starts={num_starts} are both > 1"
         if num_samples is not None:
             multisample = True if num_samples > 1 else False
+            multistart = False if num_samples > 1 else multistart
         if num_starts is not None:
             multistart = True if num_starts > 1 else False
+            multisample = False if num_starts > 1 else multisample
         self.multistart = multistart
         self.multisample = multisample
         # num_starts is used for both multistart and multisample
