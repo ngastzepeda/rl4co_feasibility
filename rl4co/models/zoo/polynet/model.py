@@ -160,9 +160,7 @@ class PolyNet(REINFORCE):
             out.update(
                 {
                     "max_reward": max_reward,
-                    "max_reward_feasibility": gather_by_index(
-                        feasibilities, max_idxs.unsqueeze(2), dim=2
-                    ),
+                    "max_reward_feasibility": gather_by_index(feasibilities, max_idxs),
                     "any_feasible": feasibilities.any(dim=-1).to(dtype=torch.float32),
                 }
             )
