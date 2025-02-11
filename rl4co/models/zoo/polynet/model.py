@@ -143,7 +143,7 @@ class PolyNet(REINFORCE):
             td,
             self.env,
             phase=phase,
-            num_starts=n_start,
+            num_samples=n_start,
             multisample=True,
         )
 
