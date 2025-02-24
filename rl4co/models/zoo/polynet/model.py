@@ -143,12 +143,13 @@ class PolyNet(REINFORCE):
             td,
             self.env,
             phase=phase,
-            num_starts=n_start,
+            num_samples=n_start,
             multisample=True,
         )
 
         # Unbatchify reward to [batch_size, num_augment, num_starts].
         reward = unbatchify(out["reward"], (n_aug, n_start))
+        feasibilities = unbatchify(out["feasibility"], (n_aug, n_start))
 
         # Training phase
         if phase == "train":
@@ -156,13 +157,28 @@ class PolyNet(REINFORCE):
             log_likelihood = unbatchify(out["log_likelihood"], (n_aug, n_start))
             self.calculate_loss(td, batch, out, reward, log_likelihood)
             max_reward, max_idxs = reward.max(dim=-1)
-            out.update({"max_reward": max_reward})
+            out.update(
+                {
+                    "max_reward": max_reward,
+                    "max_reward_feasibility": gather_by_index(feasibilities, max_idxs),
+                    "any_feasible": feasibilities.any(dim=-1).to(dtype=torch.float32),
+                }
+            )
         # Get multi-start (=POMO) rewards and best actions only during validation and test
         else:
             if n_start > 1:
                 # max multi-start reward
                 max_reward, max_idxs = reward.max(dim=-1)
-                out.update({"max_reward": max_reward})
+                max_rew_feas = gather_by_index(
+                    feasibilities, max_idxs.unsqueeze(2), dim=2
+                )
+                out.update(
+                    {
+                        "max_reward": max_reward,
+                        "max_reward_feasibility": max_rew_feas,
+                        "any_feasible": feasibilities.any(dim=-1).to(dtype=torch.float32),
+                    }
+                )
 
                 if out.get("actions", None) is not None:
                     # Reshape batch to [batch_size, num_augment, num_starts, ...]
@@ -180,8 +196,15 @@ class PolyNet(REINFORCE):
             if n_aug > 1:
                 # If multistart is enabled, we use the best multistart rewards
                 reward_ = max_reward if n_start > 1 else reward
+                feas_ = max_rew_feas if n_start > 1 else feasibilities
                 max_aug_reward, max_idxs = reward_.max(dim=1)
-                out.update({"max_aug_reward": max_aug_reward})
+                out.update(
+                    {
+                        "max_aug_reward": max_aug_reward,
+                        "max_aug_reward_feasibility": gather_by_index(feas_, max_idxs),
+                        "max_aug_any_feasible": feas_.any(dim=-1).to(dtype=torch.float32),
+                    }
+                )
 
                 if out.get("actions", None) is not None:
                     actions_ = (
