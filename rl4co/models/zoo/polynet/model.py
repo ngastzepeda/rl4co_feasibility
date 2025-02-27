@@ -10,8 +10,10 @@ from rl4co.data.transforms import StateAugmentation
 from rl4co.envs.common.base import RL4COEnvBase
 from rl4co.models.rl.reinforce.reinforce import REINFORCE
 from rl4co.models.zoo.polynet.policy import PolyNetPolicy
+from rl4co.utils.feasibility import tensor_nan_to_inf
 from rl4co.utils.ops import gather_by_index, unbatchify
 from rl4co.utils.pylogger import get_pylogger
+from rl4co.utils.feasibility import tensor_inf_to_nan, tensor_nan_to_inf
 
 log = get_pylogger(__name__)
 
@@ -147,9 +149,25 @@ class PolyNet(REINFORCE):
             multisample=True,
         )
 
-        # Unbatchify reward to [batch_size, num_augment, num_starts].
-        reward = unbatchify(out["reward"], (n_aug, n_start))
-        feasibilities = unbatchify(out["feasibility"], (n_aug, n_start))
+        reward_flat = out["reward"]
+        feas_flat = out["feasibility"]
+        cost_flat = out["route_cost"]
+
+        # set infeasible costs to nan, so I can take the nanmean() of feasible rewards later
+        feas_cost_flat = torch.where(
+            feas_flat.bool(),
+            cost_flat,
+            torch.tensor(
+                float("nan"),
+                device=cost_flat.device,
+                dtype=cost_flat.dtype,
+            ),
+        )
+        out["feasible_route_cost"] = feas_cost_flat
+
+        feasibilities = unbatchify(feas_flat, (n_aug, n_start))
+        cost_feas = unbatchify(feas_cost_flat, (n_aug, n_start))
+        reward = unbatchify(reward_flat, (n_aug, n_start))
 
         # Training phase
         if phase == "train":
@@ -157,26 +175,28 @@ class PolyNet(REINFORCE):
             log_likelihood = unbatchify(out["log_likelihood"], (n_aug, n_start))
             self.calculate_loss(td, batch, out, reward, log_likelihood)
             max_reward, max_idxs = reward.max(dim=-1)
+            min_cost_feas, min_idxs_feas = tensor_nan_to_inf(cost_feas).min(dim=-1)
+            any_feasible = feasibilities.any(dim=-1).to(dtype=torch.float32)
+            # TODO log feasible route costs
             out.update(
                 {
                     "max_reward": max_reward,
-                    "max_reward_feasibility": gather_by_index(feasibilities, max_idxs),
-                    "any_feasible": feasibilities.any(dim=-1).to(dtype=torch.float32),
+                    "any_feasible": any_feasible,
+                    "min_feas_cost": tensor_inf_to_nan(min_cost_feas),
                 }
             )
         # Get multi-start (=POMO) rewards and best actions only during validation and test
         else:
             if n_start > 1:
+                min_cost_feas, min_idxs_feas = tensor_nan_to_inf(cost_feas).min(dim=-1)
+                any_feasible = feasibilities.any(dim=-1).to(dtype=torch.float32)
                 # max multi-start reward
                 max_reward, max_idxs = reward.max(dim=-1)
-                max_rew_feas = gather_by_index(
-                    feasibilities, max_idxs.unsqueeze(2), dim=2
-                )
                 out.update(
                     {
                         "max_reward": max_reward,
-                        "max_reward_feasibility": max_rew_feas,
-                        "any_feasible": feasibilities.any(dim=-1).to(dtype=torch.float32),
+                        "any_feasible": any_feasible,
+                        "min_feas_cost": tensor_inf_to_nan(min_cost_feas),
                     }
                 )
 
@@ -196,13 +216,18 @@ class PolyNet(REINFORCE):
             if n_aug > 1:
                 # If multistart is enabled, we use the best multistart rewards
                 reward_ = max_reward if n_start > 1 else reward
-                feas_ = max_rew_feas if n_start > 1 else feasibilities
+                any_feas_ = any_feasible if n_start > 1 else feasibilities
+                min_cost_ = min_cost_feas if n_start > 1 else cost_feas
+
+                min_cost_aug, min_idxs = tensor_nan_to_inf(min_cost_).min(dim=1)
+                any_feas_aug = any_feas_.any(dim=-1).to(dtype=torch.float32)
                 max_aug_reward, max_idxs = reward_.max(dim=1)
+
                 out.update(
                     {
                         "max_aug_reward": max_aug_reward,
-                        "max_aug_reward_feasibility": gather_by_index(feas_, max_idxs),
-                        "max_aug_any_feasible": feas_.any(dim=-1).to(dtype=torch.float32),
+                        "any_feasible_aug": any_feas_aug,
+                        "min_feas_cost_aug": tensor_inf_to_nan(min_cost_aug),
                     }
                 )
 

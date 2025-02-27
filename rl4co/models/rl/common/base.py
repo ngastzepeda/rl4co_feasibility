@@ -226,7 +226,7 @@ class RL4COLitModule(LightningModule, metaclass=abc.ABCMeta):
             dataloader_name = "/" + self.dataloader_names[dataloader_idx]
         metrics = {
             f"{phase}/{k}{dataloader_name}": (
-                v.mean() if isinstance(v, torch.Tensor) else v
+                v.nanmean() if isinstance(v, torch.Tensor) else v
             )
             for k, v in metric_dict.items()
             if k in metrics

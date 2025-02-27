@@ -9,3 +9,9 @@ from rl4co.utils.utils import (
     show_versions,
     task_wrapper,
 )
+from rl4co.utils.feasibility import (
+    tensor_inf_to_nan,
+    tensor_nan_to_inf,
+    tensor_nan_to_neg_inf,
+    tensor_neg_inf_to_nan,
+)
