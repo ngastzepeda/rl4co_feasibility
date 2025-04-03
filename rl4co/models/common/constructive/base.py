@@ -2,6 +2,7 @@ import abc
 
 from typing import Any, Callable, Optional, Tuple, Union
 
+import torch
 import torch.nn as nn
 
 from tensordict import TensorDict
@@ -275,9 +276,20 @@ class ConstructivePolicy(nn.Module):
                 route_cost = zeros_like(outdict["log_likelihood"])
                 route_penalty = zeros_like(outdict["log_likelihood"])
             finally:
+                # set infeasible costs to nan, so I can take the nanmean() of feasible rewards later
+                feas_cost_flat = torch.where(
+                    feasibility.bool(),
+                    route_cost,
+                    torch.tensor(
+                        float("nan"),
+                        device=route_cost.device,
+                        dtype=route_cost.dtype,
+                    ),
+                )
                 outdict["feasibility"] = feasibility
                 outdict["route_cost"] = route_cost
                 outdict["route_penalty"] = route_penalty
+                outdict["feasible_route_cost"] = feas_cost_flat
 
         if return_actions:
             outdict["actions"] = actions

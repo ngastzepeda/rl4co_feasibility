@@ -1,5 +1,6 @@
 from typing import Any, Union
 
+import torch
 import torch.nn as nn
 
 from rl4co.data.transforms import StateAugmentation
@@ -8,6 +9,7 @@ from rl4co.models.rl.reinforce.reinforce import REINFORCE
 from rl4co.models.zoo.am import AttentionModelPolicy
 from rl4co.utils.ops import gather_by_index, unbatchify
 from rl4co.utils.pylogger import get_pylogger
+from rl4co.utils.feasibility import tensor_nan_to_inf, tensor_inf_to_nan
 
 log = get_pylogger(__name__)
 
@@ -104,6 +106,8 @@ class POMO(REINFORCE):
 
         # Unbatchify reward to [batch_size, num_augment, num_starts].
         reward = unbatchify(out["reward"], (n_aug, n_start))
+        feasibilities = unbatchify(out["feasibility"], (n_aug, n_start))
+        cost_feas = unbatchify(out["feasible_route_cost"], (n_aug, n_start))
 
         # Training phase
         if phase == "train":
@@ -111,13 +115,29 @@ class POMO(REINFORCE):
             log_likelihood = unbatchify(out["log_likelihood"], (n_aug, n_start))
             self.calculate_loss(td, batch, out, reward, log_likelihood)
             max_reward, max_idxs = reward.max(dim=-1)
-            out.update({"max_reward": max_reward})
+            min_cost_feas, min_idxs_feas = tensor_nan_to_inf(cost_feas).min(dim=-1)
+            any_feasible = feasibilities.any(dim=-1).to(dtype=torch.float32)
+            out.update(
+                {
+                    "max_reward": max_reward,
+                    "any_feasible": any_feasible,
+                    "min_feas_cost": tensor_inf_to_nan(min_cost_feas),
+                }
+            )
         # Get multi-start (=POMO) rewards and best actions only during validation and test
         else:
             if n_start > 1:
+                min_cost_feas, min_idxs_feas = tensor_nan_to_inf(cost_feas).min(dim=-1)
+                any_feasible = feasibilities.any(dim=-1).to(dtype=torch.float32)
                 # max multi-start reward
                 max_reward, max_idxs = reward.max(dim=-1)
-                out.update({"max_reward": max_reward})
+                out.update(
+                    {
+                        "max_reward": max_reward,
+                        "any_feasible": any_feasible,
+                        "min_feas_cost": tensor_inf_to_nan(min_cost_feas),
+                    }
+                )
 
                 if out.get("actions", None) is not None:
                     # Reshape batch to [batch_size, num_augment, num_starts, ...]
@@ -135,8 +155,20 @@ class POMO(REINFORCE):
             if n_aug > 1:
                 # If multistart is enabled, we use the best multistart rewards
                 reward_ = max_reward if n_start > 1 else reward
+                any_feas_ = any_feasible if n_start > 1 else feasibilities
+                min_cost_ = min_cost_feas if n_start > 1 else cost_feas
+
+                min_cost_aug, min_idxs = tensor_nan_to_inf(min_cost_).min(dim=1)
+                any_feas_aug = any_feas_.any(dim=-1).to(dtype=torch.float32)
                 max_aug_reward, max_idxs = reward_.max(dim=1)
-                out.update({"max_aug_reward": max_aug_reward})
+
+                out.update(
+                    {
+                        "max_aug_reward": max_aug_reward,
+                        "any_feasible_aug": any_feas_aug,
+                        "min_feas_cost_aug": tensor_inf_to_nan(min_cost_aug),
+                    }
+                )
 
                 if out.get("actions", None) is not None:
                     actions_ = (

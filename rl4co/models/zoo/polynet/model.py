@@ -149,25 +149,9 @@ class PolyNet(REINFORCE):
             multisample=True,
         )
 
-        reward_flat = out["reward"]
-        feas_flat = out["feasibility"]
-        cost_flat = out["route_cost"]
-
-        # set infeasible costs to nan, so I can take the nanmean() of feasible rewards later
-        feas_cost_flat = torch.where(
-            feas_flat.bool(),
-            cost_flat,
-            torch.tensor(
-                float("nan"),
-                device=cost_flat.device,
-                dtype=cost_flat.dtype,
-            ),
-        )
-        out["feasible_route_cost"] = feas_cost_flat
-
-        feasibilities = unbatchify(feas_flat, (n_aug, n_start))
-        cost_feas = unbatchify(feas_cost_flat, (n_aug, n_start))
-        reward = unbatchify(reward_flat, (n_aug, n_start))
+        feasibilities = unbatchify(out["feasibility"], (n_aug, n_start))
+        cost_feas = unbatchify(out["feasible_route_cost"], (n_aug, n_start))
+        reward = unbatchify(out["reward"], (n_aug, n_start))
 
         # Training phase
         if phase == "train":
@@ -177,7 +161,6 @@ class PolyNet(REINFORCE):
             max_reward, max_idxs = reward.max(dim=-1)
             min_cost_feas, min_idxs_feas = tensor_nan_to_inf(cost_feas).min(dim=-1)
             any_feasible = feasibilities.any(dim=-1).to(dtype=torch.float32)
-            # TODO log feasible route costs
             out.update(
                 {
                     "max_reward": max_reward,

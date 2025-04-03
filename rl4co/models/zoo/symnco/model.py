@@ -1,5 +1,6 @@
 from typing import Any, Union
 
+import torch
 import torch.nn as nn
 
 from rl4co.data.transforms import StateAugmentation
@@ -13,6 +14,7 @@ from rl4co.models.zoo.symnco.losses import (
 from rl4co.models.zoo.symnco.policy import SymNCOPolicy
 from rl4co.utils.ops import gather_by_index, get_num_starts, unbatchify
 from rl4co.utils.pylogger import get_pylogger
+from rl4co.utils.feasibility import tensor_nan_to_inf, tensor_inf_to_nan
 
 log = get_pylogger(__name__)
 
@@ -87,12 +89,18 @@ class SymNCO(REINFORCE):
         out = self.policy(td, self.env, phase=phase, num_starts=n_start)
 
         # Unbatchify reward to [batch_size, n_start, n_aug].
+        # note that we use (n_start, n_aug) here instead of (n_aug, n_start) like in other models
         reward = unbatchify(out["reward"], (n_start, n_aug))
+        feasibilities = unbatchify(out["feasibility"], (n_start, n_aug))
+        cost_feas = unbatchify(out["feasible_route_cost"], (n_start, n_aug))
 
         # Main training loss
         if phase == "train":
             # [batch_size, n_start, n_aug]
             ll = unbatchify(out["log_likelihood"], (n_start, n_aug))
+            max_reward, max_idxs = reward.max(dim=1)
+            min_cost_feas, _ = tensor_nan_to_inf(cost_feas).min(dim=1)
+            any_feasible = feasibilities.any(dim=1).to(dtype=torch.float32)
 
             # Calculate losses: problem symmetricity, solution symmetricity, invariance
             loss_ps = problem_symmetricity_loss(reward, ll) if n_start > 1 else 0
@@ -105,6 +113,9 @@ class SymNCO(REINFORCE):
                     "loss_ss": loss_ss,
                     "loss_ps": loss_ps,
                     "loss_inv": loss_inv,
+                    "max_reward": max_reward,
+                    "any_feasible": any_feasible,
+                    "min_feas_cost": tensor_inf_to_nan(min_cost_feas),
                 }
             )
 
@@ -113,7 +124,15 @@ class SymNCO(REINFORCE):
             if n_start > 1:
                 # max multi-start reward
                 max_reward, max_idxs = reward.max(dim=1)
-                out.update({"max_reward": max_reward})
+                min_cost_feas, _ = tensor_nan_to_inf(cost_feas).min(dim=1)
+                any_feasible = feasibilities.any(dim=1).to(dtype=torch.float32)
+                out.update(
+                    {
+                        "max_reward": max_reward,
+                        "any_feasible": any_feasible,
+                        "min_feas_cost": tensor_inf_to_nan(min_cost_feas),
+                    }
+                )
 
                 # Reshape batch to [batch, n_start, n_aug]
                 if out.get("actions", None) is not None:
@@ -127,8 +146,21 @@ class SymNCO(REINFORCE):
             if n_aug > 1:
                 # If multistart is enabled, we use the best multistart rewards
                 reward_ = max_reward if n_start > 1 else reward
+                any_feas_ = any_feasible if n_start > 1 else feasibilities
+                min_cost_ = min_cost_feas if n_start > 1 else cost_feas
+
+                min_cost_aug, _ = tensor_nan_to_inf(min_cost_).min(dim=1)
+                any_feas_aug = any_feas_.any(dim=1).to(dtype=torch.float32)
                 max_aug_reward, max_idxs = reward_.max(dim=1)
-                out.update({"max_aug_reward": max_aug_reward})
+
+                out.update(
+                    {
+                        "max_aug_reward": max_aug_reward,
+                        "any_feasible_aug": any_feas_aug,
+                        "min_feas_cost_aug": tensor_inf_to_nan(min_cost_aug),
+                    }
+                )
+
                 if out.get("best_multistart_actions", None) is not None:
                     out.update(
                         {
