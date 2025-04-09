@@ -69,7 +69,7 @@ class EAS(TransductiveModel):
         verbose: bool = True,
         **kwargs,
     ):
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(ignore=["env", "policy", "dataset"], logger=False)
 
         assert (
             self.hparams.use_eas_embedding or self.hparams.use_eas_layer

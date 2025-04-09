@@ -40,7 +40,7 @@ class TransductiveModel(RL4COLitModule, metaclass=abc.ABCMeta):
         save_path: Optional[str] = None,
         **kwargs,
     ):
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(ignore=["env", "policy", "dataset"], logger=False)
         super().__init__(env, policy, **kwargs)
         self.dataset = dataset
         self.automatic_optimization = False  # we optimize manually
