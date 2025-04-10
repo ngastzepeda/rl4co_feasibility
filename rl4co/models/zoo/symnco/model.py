@@ -88,16 +88,16 @@ class SymNCO(REINFORCE):
         # Evaluate policy
         out = self.policy(td, self.env, phase=phase, num_starts=n_start)
 
-        # Unbatchify reward to [batch_size, n_start, n_aug].
-        # note that we use (n_start, n_aug) here instead of (n_aug, n_start) like in other models
-        reward = unbatchify(out["reward"], (n_start, n_aug))
-        feasibilities = unbatchify(out["feasibility"], (n_start, n_aug))
-        cost_feas = unbatchify(out["feasible_route_cost"], (n_start, n_aug))
+        # Unbatchify reward to [batch_size, n_aug, n_start].
+        unbatchify_dims = (n_aug, n_start)
+        reward = unbatchify(out["reward"], unbatchify_dims)
+        feasibilities = unbatchify(out["feasibility"], unbatchify_dims)
+        cost_feas = unbatchify(out["feasible_route_cost"], unbatchify_dims)
 
         # Main training loss
         if phase == "train":
             # [batch_size, n_start, n_aug]
-            ll = unbatchify(out["log_likelihood"], (n_start, n_aug))
+            ll = unbatchify(out["log_likelihood"], unbatchify_dims)
             max_reward, max_idxs = reward.max(dim=1)
             min_cost_feas, _ = tensor_nan_to_inf(cost_feas).min(dim=1)
             any_feasible = feasibilities.any(dim=1).to(dtype=torch.float32)
@@ -136,7 +136,7 @@ class SymNCO(REINFORCE):
 
                 # Reshape batch to [batch, n_start, n_aug]
                 if out.get("actions", None) is not None:
-                    actions = unbatchify(out["actions"], (n_start, n_aug))
+                    actions = unbatchify(out["actions"], unbatchify_dims)
                     out.update(
                         {"best_multistart_actions": gather_by_index(actions, max_idxs)}
                     )
@@ -172,3 +172,27 @@ class SymNCO(REINFORCE):
 
         metrics = self.log_metrics(out, phase, dataloader_idx=dataloader_idx)
         return {"loss": out.get("loss", None), **metrics}
+
+    @classmethod
+    def load_from_checkpoint(
+        cls,
+        checkpoint_path,
+        map_location=None,
+        hparams_file=None,
+        strict=False,
+        load_baseline=True,
+        **kwargs,
+    ):
+        if kwargs.pop("baseline", "symnco") != "symnco":
+            log.warning(
+                "SymNCO only supports custom-symnco baseline. Setting to 'symnco'."
+            )
+        kwargs["baseline"] = "symnco"
+        return super().load_from_checkpoint(
+            checkpoint_path,
+            map_location,
+            hparams_file,
+            strict,
+            load_baseline,
+            **kwargs,
+        )
