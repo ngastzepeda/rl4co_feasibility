@@ -85,7 +85,7 @@ class SymNCOPolicy(AttentionModelPolicy):
         )
 
         # Project initial embeddings
-        if self.use_projection_head:
+        if self.use_projection_head and phase == "train":
             out["proj_embeddings"] = self.projection_head(out["init_embeds"])
 
         return out
