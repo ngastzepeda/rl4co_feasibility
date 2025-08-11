@@ -130,7 +130,7 @@ celerybeat.pid
 
 # Environments # only on root, add /
 .env
-.venv
+.venv*
 /env/
 venv/
 ENV/

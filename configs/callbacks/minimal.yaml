@@ -1,0 +1,12 @@
+# Minimal callbacks configuration for debugging
+# All callbacks that work without a logger (no disk writes)
+
+defaults:
+  - model_summary.yaml
+  - tqdm_progress_bar.yaml
+  - speed_monitor.yaml
+  - _self_
+
+# Basic model summary for debugging - reduced depth for cleaner output
+model_summary:
+  max_depth: 3

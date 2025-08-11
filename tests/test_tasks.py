@@ -17,7 +17,11 @@ from rl4co.tasks.train import run
 @pytest.fixture(scope="package")
 def cfg_train_global() -> DictConfig:
     with initialize(config_path="../configs"):
-        cfg = compose(config_name="main.yaml", return_hydra_config=True, overrides=[])
+        cfg = compose(
+            config_name="main.yaml",
+            return_hydra_config=True,
+            overrides=["callbacks=minimal"],
+        )
 
         # set defaults for all tests
         with open_dict(cfg):

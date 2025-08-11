@@ -1,0 +1,6 @@
+# https://pytorch-lightning.readthedocs.io/en/latest/api/lightning.callbacks.TQDMProgressBar.html
+
+# Create a progress bar with TQDM formatting (more stable than Rich).
+# Changed from RichProgressBar to fix IndexError: pop from empty list
+rich_progress_bar:
+  _target_: lightning.pytorch.callbacks.TQDMProgressBar
