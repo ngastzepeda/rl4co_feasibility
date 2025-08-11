@@ -125,6 +125,7 @@ docs = [
     "mdx-truly-sane-lists",
     "markdown-gfm-admonition",
 ]
+all = ["black", "pre-commit", "ruff", "pytest", "pytest-cov", "torch_geometric", "numba", "pyvrp", "mkdocs", "mkdocs-material", "mkdocstrings-python", "mike", "mkdocs-jupyter", "mkdocs-redirects", "mkdocs-autolinks-plugin", "griffe-typingdoc", "griffe-inherited-docstrings", "griffe", "mkdocs-same-dir", "mdx-breakless-lists", "mdx-truly-sane-lists", "markdown-gfm-admonition"]
 
 [tool.black]
 line-length = 90
